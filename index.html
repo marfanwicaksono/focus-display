@@ -234,7 +234,7 @@
         const ROTATION_TIME = 5000; // 5 seconds per goal
 
         // Elements
-        const goalText = document.getElementById('goalText');
+        let goalText = document.getElementById('goalText');
         const counter = document.getElementById('counter');
         const progressBar = document.getElementById('progressBar');
         const prevBtn = document.getElementById('prevBtn');
@@ -253,11 +253,11 @@
             // Reset animation by removing and re-adding the element
             const parent = goalText.parentNode;
             const clone = goalText.cloneNode(false);
+            clone.textContent = goals[currentIndex];
             parent.replaceChild(clone, goalText);
 
             // Update reference to the new element
-            const newGoalText = document.getElementById('goalText');
-            newGoalText.textContent = goals[currentIndex];
+            goalText = clone;
 
             counter.textContent = `${currentIndex + 1} / ${goals.length}`;
             progress = 0;
