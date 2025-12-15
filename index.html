@@ -250,13 +250,15 @@
                 return;
             }
 
-            // Reset animation
-            goalText.style.animation = 'none';
-            setTimeout(() => {
-                goalText.style.animation = 'slideIn 0.8s ease-out forwards';
-            }, 10);
+            // Reset animation by removing and re-adding the element
+            const parent = goalText.parentNode;
+            const clone = goalText.cloneNode(false);
+            parent.replaceChild(clone, goalText);
 
-            goalText.textContent = goals[currentIndex];
+            // Update reference to the new element
+            const newGoalText = document.getElementById('goalText');
+            newGoalText.textContent = goals[currentIndex];
+
             counter.textContent = `${currentIndex + 1} / ${goals.length}`;
             progress = 0;
             updateProgressBar();
