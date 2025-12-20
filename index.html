@@ -63,101 +63,10 @@
             }
         }
 
-        .controls {
-            position: fixed;
-            bottom: 2rem;
-            right: 2rem;
-            display: flex;
-            gap: 1rem;
-            z-index: 1000;
-        }
-
-        .btn {
-            background: rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(10px);
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            color: white;
-            padding: 0.75rem 1.5rem;
-            border-radius: 50px;
-            cursor: pointer;
-            font-size: 1rem;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-        }
-
-        .btn:hover {
-            background: rgba(255, 255, 255, 0.3);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
-        }
-
-        .btn:active {
-            transform: translateY(0);
-        }
-
-        .progress-bar {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            height: 4px;
-            background: rgba(255, 255, 255, 0.5);
-            width: 0%;
-            transition: width 0.1s linear;
-        }
-
-        .counter {
-            position: fixed;
-            top: 2rem;
-            right: 2rem;
-            color: white;
-            font-size: 1.2rem;
-            font-weight: 600;
-            background: rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(10px);
-            padding: 0.75rem 1.5rem;
-            border-radius: 50px;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-        }
-
         .no-goals {
             color: white;
             font-size: 1.5rem;
             opacity: 0.8;
-        }
-
-        /* Fullscreen styles */
-        :fullscreen .goal-display,
-        :-webkit-full-screen .goal-display,
-        :-moz-full-screen .goal-display {
-            font-size: 5rem;
-        }
-
-        :fullscreen .controls,
-        :-webkit-full-screen .controls,
-        :-moz-full-screen .controls {
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-
-        :fullscreen .controls:hover,
-        :-webkit-full-screen .controls:hover,
-        :-moz-full-screen .controls:hover {
-            opacity: 1;
-        }
-
-        :fullscreen .counter,
-        :-webkit-full-screen .counter,
-        :-moz-full-screen .counter {
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-
-        :fullscreen:hover .counter,
-        :-webkit-full-screen:hover .counter,
-        :-moz-full-screen:hover .counter {
-            opacity: 1;
         }
 
         /* Responsive design */
@@ -166,29 +75,12 @@
                 font-size: 2.5rem;
                 min-height: 150px;
             }
-
-            .controls {
-                bottom: 1rem;
-                right: 1rem;
-                flex-direction: column;
-            }
-
-            .counter {
-                top: 1rem;
-                right: 1rem;
-                font-size: 1rem;
-            }
         }
 
         @media (max-width: 480px) {
             .goal-display {
                 font-size: 1.8rem;
                 padding: 1rem;
-            }
-
-            .btn {
-                padding: 0.5rem 1rem;
-                font-size: 0.9rem;
             }
         }
     </style>
@@ -199,17 +91,6 @@
             <div class="goal-text" id="goalText">Loading...</div>
         </div>
     </div>
-
-    <div class="counter" id="counter">1 / 1</div>
-
-    <div class="controls">
-        <button class="btn" id="prevBtn">← Previous</button>
-        <button class="btn" id="pauseBtn">⏸ Pause</button>
-        <button class="btn" id="nextBtn">Next →</button>
-        <button class="btn" id="fullscreenBtn">⛶ Fullscreen</button>
-    </div>
-
-    <div class="progress-bar" id="progressBar"></div>
 
     <script>
         // Parse URL parameters
@@ -224,29 +105,76 @@
             return goalsParam.split('|').map(goal => goal.trim()).filter(goal => goal.length > 0);
         }
 
+        // Get Trello parameters from URL
+        function getTrelloParams() {
+            const params = new URLSearchParams(window.location.search);
+            return {
+                listId: params.get('listId'),
+                apiKey: params.get('apiKey'),
+                token: params.get('token')
+            };
+        }
+
+        // Fetch cards from Trello
+        async function fetchTrelloCards(listId, apiKey, token) {
+            try {
+                const url = `https://api.trello.com/1/lists/${listId}/cards?key=${apiKey}&token=${token}`;
+                const response = await fetch(url);
+
+                if (!response.ok) {
+                    throw new Error(`Trello API error: ${response.status} ${response.statusText}`);
+                }
+
+                const cards = await response.json();
+                return cards.map(card => card.name);
+            } catch (error) {
+                console.error('Error fetching Trello cards:', error);
+                return [];
+            }
+        }
+
+        // Initialize goals
+        async function initializeGoals() {
+            const trelloParams = getTrelloParams();
+
+            // Check if Trello parameters are provided
+            if (trelloParams.listId && trelloParams.apiKey && trelloParams.token) {
+                const trelloCards = await fetchTrelloCards(
+                    trelloParams.listId,
+                    trelloParams.apiKey,
+                    trelloParams.token
+                );
+
+                if (trelloCards.length > 0) {
+                    goals = trelloCards;
+                } else {
+                    goals = ['Error loading Trello cards. Check console for details.'];
+                }
+            } else {
+                // Fall back to URL goals parameter
+                goals = getGoalsFromURL();
+            }
+
+            // Initialize display
+            displayGoal();
+            if (goals.length > 1) {
+                startRotation();
+            }
+        }
+
         // App state
-        let goals = getGoalsFromURL();
+        let goals = [];
         let currentIndex = 0;
-        let isPaused = false;
         let rotationInterval = null;
-        let progressInterval = null;
-        let progress = 0;
         const ROTATION_TIME = 5000; // 5 seconds per goal
 
         // Elements
         let goalText = document.getElementById('goalText');
-        const counter = document.getElementById('counter');
-        const progressBar = document.getElementById('progressBar');
-        const prevBtn = document.getElementById('prevBtn');
-        const pauseBtn = document.getElementById('pauseBtn');
-        const nextBtn = document.getElementById('nextBtn');
-        const fullscreenBtn = document.getElementById('fullscreenBtn');
 
         // Display current goal
         function displayGoal() {
             if (goals.length === 0) {
-                goalText.innerHTML = '<div class="no-goals">No goals set. Add ?goals=goal1|goal2|goal3 to the URL</div>';
-                counter.style.display = 'none';
+                goalText.innerHTML = '<div class="no-goals">No goals set.<br><br>Add ?goals=goal1|goal2|goal3<br>or<br>?listId=YOUR_LIST_ID&apiKey=YOUR_API_KEY&token=YOUR_TOKEN</div>';
                 return;
             }
 
@@ -258,15 +186,6 @@
 
             // Update reference to the new element
             goalText = clone;
-
-            counter.textContent = `${currentIndex + 1} / ${goals.length}`;
-            progress = 0;
-            updateProgressBar();
-        }
-
-        // Update progress bar
-        function updateProgressBar() {
-            progressBar.style.width = progress + '%';
         }
 
         // Start rotation
@@ -275,20 +194,8 @@
 
             stopRotation();
 
-            progressInterval = setInterval(() => {
-                if (!isPaused) {
-                    progress += (100 / ROTATION_TIME) * 100;
-                    if (progress >= 100) {
-                        progress = 100;
-                    }
-                    updateProgressBar();
-                }
-            }, 100);
-
             rotationInterval = setInterval(() => {
-                if (!isPaused) {
-                    nextGoal();
-                }
+                nextGoal();
             }, ROTATION_TIME);
         }
 
@@ -298,10 +205,6 @@
                 clearInterval(rotationInterval);
                 rotationInterval = null;
             }
-            if (progressInterval) {
-                clearInterval(progressInterval);
-                progressInterval = null;
-            }
         }
 
         // Next goal
@@ -310,96 +213,8 @@
             displayGoal();
         }
 
-        // Previous goal
-        function prevGoal() {
-            currentIndex = (currentIndex - 1 + goals.length) % goals.length;
-            displayGoal();
-        }
-
-        // Toggle pause
-        function togglePause() {
-            isPaused = !isPaused;
-            pauseBtn.textContent = isPaused ? '▶ Resume' : '⏸ Pause';
-        }
-
-        // Toggle fullscreen
-        function toggleFullscreen() {
-            if (!document.fullscreenElement && !document.webkitFullscreenElement && !document.mozFullScreenElement) {
-                const elem = document.documentElement;
-                if (elem.requestFullscreen) {
-                    elem.requestFullscreen();
-                } else if (elem.webkitRequestFullscreen) {
-                    elem.webkitRequestFullscreen();
-                } else if (elem.mozRequestFullScreen) {
-                    elem.mozRequestFullScreen();
-                }
-                fullscreenBtn.textContent = '✕ Exit Fullscreen';
-            } else {
-                if (document.exitFullscreen) {
-                    document.exitFullscreen();
-                } else if (document.webkitExitFullscreen) {
-                    document.webkitExitFullscreen();
-                } else if (document.mozCancelFullScreen) {
-                    document.mozCancelFullScreen();
-                }
-                fullscreenBtn.textContent = '⛶ Fullscreen';
-            }
-        }
-
-        // Event listeners
-        prevBtn.addEventListener('click', () => {
-            prevGoal();
-            if (!isPaused && goals.length > 1) {
-                startRotation();
-            }
-        });
-
-        nextBtn.addEventListener('click', () => {
-            nextGoal();
-            if (!isPaused && goals.length > 1) {
-                startRotation();
-            }
-        });
-
-        pauseBtn.addEventListener('click', togglePause);
-        fullscreenBtn.addEventListener('click', toggleFullscreen);
-
-        // Keyboard shortcuts
-        document.addEventListener('keydown', (e) => {
-            switch(e.key) {
-                case 'ArrowLeft':
-                    prevGoal();
-                    if (!isPaused && goals.length > 1) {
-                        startRotation();
-                    }
-                    break;
-                case 'ArrowRight':
-                    nextGoal();
-                    if (!isPaused && goals.length > 1) {
-                        startRotation();
-                    }
-                    break;
-                case ' ':
-                    e.preventDefault();
-                    togglePause();
-                    break;
-                case 'f':
-                case 'F':
-                    toggleFullscreen();
-                    break;
-            }
-        });
-
-        // Handle fullscreen change
-        document.addEventListener('fullscreenchange', () => {
-            fullscreenBtn.textContent = document.fullscreenElement ? '✕ Exit Fullscreen' : '⛶ Fullscreen';
-        });
-
         // Initialize
-        displayGoal();
-        if (goals.length > 1) {
-            startRotation();
-        }
+        initializeGoals();
     </script>
 </body>
 </html>
