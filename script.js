@@ -120,7 +120,7 @@ function formatDate(dateString) {
     const diffTime = date - now;
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-    const formatted = date.toLocaleDateString('en-US', {
+    const formatted = date.toLocaleString(undefined, {
         weekday: 'long',
         month: 'long',
         day: 'numeric',
