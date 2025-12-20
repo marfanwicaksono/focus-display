@@ -135,6 +135,61 @@ function formatDate(dateString) {
     };
 }
 
+// Refresh Trello cards
+async function refreshTrelloCards() {
+    const trelloParams = getTrelloParams();
+
+    // Only refresh if we're using Trello
+    if (trelloParams.listId && trelloParams.apiKey && trelloParams.token) {
+        console.log('Refreshing Trello cards...');
+
+        const trelloCards = await fetchTrelloCards(
+            trelloParams.listId,
+            trelloParams.apiKey,
+            trelloParams.token
+        );
+
+        if (trelloCards.length > 0) {
+            const oldCardsLength = cards.length;
+            cards = trelloCards;
+
+            // Reset index if it's out of bounds
+            if (currentIndex >= cards.length) {
+                currentIndex = 0;
+            }
+
+            // Refresh the current display
+            displayCard();
+
+            console.log(`Refreshed: ${cards.length} cards loaded (previously ${oldCardsLength})`);
+        }
+    }
+}
+
+// Start auto-refresh
+function startAutoRefresh() {
+    const trelloParams = getTrelloParams();
+
+    // Only set up auto-refresh if we're using Trello
+    if (trelloParams.listId && trelloParams.apiKey && trelloParams.token) {
+        stopAutoRefresh();
+
+        refreshInterval = setInterval(() => {
+            refreshTrelloCards();
+        }, REFRESH_TIME);
+
+        console.log('Auto-refresh enabled: Trello cards will refresh every 5 minutes');
+    }
+}
+
+// Stop auto-refresh
+function stopAutoRefresh() {
+    if (refreshInterval) {
+        clearInterval(refreshInterval);
+        refreshInterval = null;
+    }
+}
+
 // Initialize goals
 async function initializeGoals() {
     const trelloParams = getTrelloParams();
@@ -152,6 +207,9 @@ async function initializeGoals() {
         } else {
             cards = [];
         }
+
+        // Start auto-refresh for Trello cards
+        startAutoRefresh();
     } else {
         // Fall back to URL goals parameter
         const goals = getGoalsFromURL();
@@ -169,7 +227,9 @@ async function initializeGoals() {
 let cards = [];
 let currentIndex = 0;
 let rotationInterval = null;
+let refreshInterval = null;
 const ROTATION_TIME = 10000; // 10 seconds per card (increased for detailed content)
+const REFRESH_TIME = 300000; // 5 minutes in milliseconds
 
 // Elements
 let cardDisplay = document.getElementById('cardDisplay');
