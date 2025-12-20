@@ -121,7 +121,8 @@ function formatDate(dateString) {
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
     const formatted = date.toLocaleDateString('en-US', {
-        month: 'short',
+        weekday: 'long',
+        month: 'long',
         day: 'numeric',
         year: 'numeric',
         hour: '2-digit',
@@ -268,60 +269,64 @@ function displayCard() {
     // Title
     html += `<div class="card-title">${escapeHtml(card.name)}</div>`;
 
-    // Labels
-    if (card.labels && card.labels.length > 0) {
-        html += '<div class="card-labels">';
-        card.labels.forEach(label => {
-            const bgColor = getTrelloColor(label.color);
-            const textColor = isLightColor(bgColor) ? '#333' : '#fff';
-            const labelName = label.name || label.color;
-            html += `<span class="label" style="background-color: ${bgColor}; color: ${textColor}">${escapeHtml(labelName)}</span>`;
-        });
-        html += '</div>';
-    }
+    // Info row (labels, due date, members)
+    const hasLabels = card.labels && card.labels.length > 0;
+    const hasDueDate = card.due;
+    const hasMembers = card.members && card.members.length > 0;
 
-    // Meta information
-    const metaItems = [];
+    if (hasLabels || hasDueDate || hasMembers) {
+        html += '<div class="card-info-row">';
 
-    // Due date
-    if (card.due) {
-        const dueDate = formatDate(card.due);
-        let dueClass = '';
-        let dueText = `📅 Due: ${dueDate.formatted}`;
-
-        if (dueDate.isPast) {
-            dueClass = 'overdue';
-            dueText = `⚠️ Overdue: ${dueDate.formatted}`;
-        } else if (dueDate.diffDays <= 2) {
-            dueClass = 'due-soon';
-            dueText = `⏰ Due soon: ${dueDate.formatted}`;
+        // Labels
+        if (hasLabels) {
+            html += '<div class="card-labels">';
+            card.labels.forEach(label => {
+                const bgColor = getTrelloColor(label.color);
+                const textColor = isLightColor(bgColor) ? '#333' : '#fff';
+                const labelName = label.name || label.color;
+                html += `<span class="label" style="background-color: ${bgColor}; color: ${textColor}">${escapeHtml(labelName)}</span>`;
+            });
+            html += '</div>';
         }
 
-        metaItems.push(`<div class="card-meta-item ${dueClass}">${dueText}</div>`);
-    }
+        // Due date
+        if (hasDueDate) {
+            const dueDate = formatDate(card.due);
+            let dueClass = '';
+            let dueText = `Due: ${dueDate.formatted}`;
 
-    if (metaItems.length > 0) {
-        html += `<div class="card-meta">${metaItems.join('')}</div>`;
+            if (dueDate.isPast) {
+                dueClass = 'overdue';
+                dueText = `Overdue: ${dueDate.formatted}`;
+            } else if (dueDate.diffDays <= 2) {
+                dueClass = 'due-soon';
+                dueText = `Due soon: ${dueDate.formatted}`;
+            }
+
+            html += `<div class="card-meta-item ${dueClass}">${dueText}</div>`;
+        }
+
+        // Members
+        if (hasMembers) {
+            html += '<div class="card-members">';
+            card.members.forEach(member => {
+                const avatarUrl = member.avatarUrl ? `${member.avatarUrl}/50.png` : '';
+                html += `
+                    <div class="member">
+                        ${avatarUrl ? `<img src="${avatarUrl}" class="member-avatar" alt="${escapeHtml(member.fullName)}">` : '<div class="member-avatar"></div>'}
+                        <span>${escapeHtml(member.fullName)}</span>
+                    </div>
+                `;
+            });
+            html += '</div>';
+        }
+
+        html += '</div>';
     }
 
     // Description
     if (card.desc) {
         html += `<div class="card-description">${escapeHtml(card.desc)}</div>`;
-    }
-
-    // Members
-    if (card.members && card.members.length > 0) {
-        html += '<div class="card-members">';
-        card.members.forEach(member => {
-            const avatarUrl = member.avatarUrl ? `${member.avatarUrl}/50.png` : '';
-            html += `
-                <div class="member">
-                    ${avatarUrl ? `<img src="${avatarUrl}" class="member-avatar" alt="${escapeHtml(member.fullName)}">` : '<div class="member-avatar"></div>'}
-                    <span>${escapeHtml(member.fullName)}</span>
-                </div>
-            `;
-        });
-        html += '</div>';
     }
 
     // Checklists
