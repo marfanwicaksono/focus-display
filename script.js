@@ -1,3 +1,82 @@
+// Hijri date calculation functions
+function getHijriDate(gregorianDate) {
+    // Convert Gregorian to Hijri (Islamic calendar)
+    const day = gregorianDate.getDate();
+    const month = gregorianDate.getMonth() + 1;
+    const year = gregorianDate.getFullYear();
+
+    // Calculate Julian Day Number
+    let a = Math.floor((14 - month) / 12);
+    let y = year + 4800 - a;
+    let m = month + 12 * a - 3;
+    let jd = day + Math.floor((153 * m + 2) / 5) + 365 * y + Math.floor(y / 4) - Math.floor(y / 100) + Math.floor(y / 400) - 32045;
+
+    // Convert Julian Day to Hijri
+    let l = jd - 1948440 + 10632;
+    let n = Math.floor((l - 1) / 10631);
+    l = l - 10631 * n + 354;
+    let j = (Math.floor((10985 - l) / 5316)) * (Math.floor((50 * l) / 17719)) + (Math.floor(l / 5670)) * (Math.floor((43 * l) / 15238));
+    l = l - (Math.floor((30 - j) / 15)) * (Math.floor((17719 * j) / 50)) - (Math.floor(j / 16)) * (Math.floor((15238 * j) / 43)) + 29;
+
+    const hijriMonth = Math.floor((24 * l) / 709);
+    const hijriDay = l - Math.floor((709 * hijriMonth) / 24);
+    const hijriYear = 30 * n + j - 30;
+
+    const hijriMonthNames = ['Muharram', 'Safar', 'Rabi al-Awwal', 'Rabi al-Thani', 'Jumada al-Awwal', 'Jumada al-Thani',
+                            'Rajab', "Sha'ban", 'Ramadan', 'Shawwal', 'Dhu al-Qadah', 'Dhu al-Hijjah'];
+
+    return {
+        day: hijriDay,
+        month: hijriMonth,
+        monthName: hijriMonthNames[hijriMonth - 1],
+        year: hijriYear
+    };
+}
+
+// Update date and time display
+function updateDateTime() {
+    const now = new Date();
+
+    // Convert to GMT+7
+    const gmt7Offset = 7 * 60; // GMT+7 in minutes
+    const localOffset = now.getTimezoneOffset(); // Local offset in minutes
+    const gmt7Time = new Date(now.getTime() + (gmt7Offset + localOffset) * 60000);
+
+    // Get day name
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const dayName = dayNames[gmt7Time.getDay()];
+
+    // Get date
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                       'July', 'August', 'September', 'October', 'November', 'December'];
+    const month = monthNames[gmt7Time.getMonth()];
+    const day = gmt7Time.getDate();
+    const year = gmt7Time.getFullYear();
+
+    // Get Hijri date
+    const hijri = getHijriDate(gmt7Time);
+
+    // Format date string
+    const dayDateElement = document.getElementById('dayDate');
+    if (dayDateElement) {
+        dayDateElement.textContent = `${dayName}, ${month} ${day}, ${year} (${hijri.day} ${hijri.monthName} ${hijri.year} H)`;
+    }
+
+    // Format time string (24-hour format)
+    const hours = String(gmt7Time.getHours()).padStart(2, '0');
+    const minutes = String(gmt7Time.getMinutes()).padStart(2, '0');
+    const seconds = String(gmt7Time.getSeconds()).padStart(2, '0');
+
+    const timeElement = document.getElementById('time');
+    if (timeElement) {
+        timeElement.textContent = `${hours}:${minutes}:${seconds}`;
+    }
+}
+
+// Start updating date/time every second
+setInterval(updateDateTime, 1000);
+updateDateTime(); // Initial call
+
 // Parse URL parameters
 function getGoalsFromURL() {
     const params = new URLSearchParams(window.location.search);
