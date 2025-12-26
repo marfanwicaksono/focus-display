@@ -410,7 +410,8 @@ function displayCard() {
 
     // Checklists
     if (card.checklists && card.checklists.length > 0) {
-        html += '<div class="card-checklists">';
+        const twoColumnClass = card.checklists.length >= 2 ? 'two-column' : '';
+        html += `<div class="card-checklists ${twoColumnClass}">`;
         card.checklists.forEach(checklist => {
             const total = checklist.checkItems.length;
             const completed = checklist.checkItems.filter(item => item.state === 'complete').length;
@@ -501,6 +502,33 @@ function nextCard() {
     currentIndex = (currentIndex + 1) % cards.length;
     displayCard();
 }
+
+// Previous card
+function previousCard() {
+    currentIndex = (currentIndex - 1 + cards.length) % cards.length;
+    displayCard();
+}
+
+// Keyboard navigation
+document.addEventListener('keydown', (event) => {
+    if (cards.length <= 1) return;
+
+    if (event.key === 'ArrowRight') {
+        event.preventDefault();
+        nextCard();
+        // Restart rotation timer
+        if (rotationInterval) {
+            startRotation();
+        }
+    } else if (event.key === 'ArrowLeft') {
+        event.preventDefault();
+        previousCard();
+        // Restart rotation timer
+        if (rotationInterval) {
+            startRotation();
+        }
+    }
+});
 
 // Initialize
 initializeGoals();

@@ -180,6 +180,12 @@ body {
     width: 100%;
 }
 
+.card-checklists.two-column {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2.5rem;
+}
+
 .checklist {
     background: rgba(255, 255, 255, 0.15);
     padding: 2.5rem;
@@ -290,6 +296,10 @@ body {
 
     .member {
         font-size: 1.3rem;
+    }
+
+    .card-checklists.two-column {
+        grid-template-columns: 1fr;
     }
 }
 
