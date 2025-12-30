@@ -511,6 +511,13 @@ function previousCard() {
 
 // Keyboard navigation
 document.addEventListener('keydown', (event) => {
+    // Spacebar for refresh
+    if (event.key === ' ' || event.code === 'Space') {
+        event.preventDefault();
+        refreshTrelloCards();
+        return;
+    }
+
     if (cards.length <= 1) return;
 
     if (event.key === 'ArrowRight') {

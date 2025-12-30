@@ -6,12 +6,13 @@ This guide shows you how to map physical buttons connected to Raspberry Pi GPIO 
 
 - **GPIO 17** → Left Arrow Key
 - **GPIO 22** → Right Arrow Key
+- **GPIO 27** → Spacebar Key
 
 ## Prerequisites
 
 - Raspberry Pi 3 (or any Raspberry Pi model)
 - Raspbian/Raspberry Pi OS installed
-- Two push buttons
+- Three push buttons
 - Jumper wires
 
 ## Hardware Setup
@@ -26,12 +27,17 @@ This guide shows you how to map physical buttons connected to Raspberry Pi GPIO 
    - Connect one side to GPIO 22 (Physical Pin 15)
    - Connect other side to GND (Physical Pin 14 or any GND pin)
 
+3. **Refresh Button (GPIO 27)**
+   - Connect one side to GPIO 27 (Physical Pin 13)
+   - Connect other side to GND (Physical Pin 14 or any GND pin)
+
 ### GPIO Pin Reference
 
 | GPIO | Physical Pin | Function |
 |------|--------------|----------|
 | 17   | 11           | Left Button |
 | 22   | 15           | Right Button |
+| 27   | 13           | Refresh Button (Spacebar) |
 | GND  | 9, 14, etc.  | Ground |
 
 ## Software Setup
@@ -88,26 +94,31 @@ import time
 # Setup GPIO pins
 LEFT_BUTTON_PIN = 17   # GPIO 17 for left arrow
 RIGHT_BUTTON_PIN = 22  # GPIO 22 for right arrow
+REFRESH_BUTTON_PIN = 27  # GPIO 27 for spacebar (refresh)
 
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(LEFT_BUTTON_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(RIGHT_BUTTON_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(REFRESH_BUTTON_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
-# Create virtual keyboard device with left and right arrow keys
+# Create virtual keyboard device with left, right arrow keys and spacebar
 device = uinput.Device([
     uinput.KEY_LEFT,
-    uinput.KEY_RIGHT
+    uinput.KEY_RIGHT,
+    uinput.KEY_SPACE
 ])
 
 print("Virtual keyboard created")
 print("GPIO 17 -> Left Arrow")
 print("GPIO 22 -> Right Arrow")
+print("GPIO 27 -> Spacebar (Refresh)")
 print("Listening for button presses...")
 
 try:
     left_pressed = False
     right_pressed = False
-    
+    refresh_pressed = False
+
     while True:
         # Check left button
         if GPIO.input(LEFT_BUTTON_PIN) == GPIO.LOW and not left_pressed:
@@ -117,7 +128,7 @@ try:
             time.sleep(0.05)  # Debounce delay
         elif GPIO.input(LEFT_BUTTON_PIN) == GPIO.HIGH:
             left_pressed = False
-        
+
         # Check right button
         if GPIO.input(RIGHT_BUTTON_PIN) == GPIO.LOW and not right_pressed:
             device.emit_click(uinput.KEY_RIGHT)
@@ -126,7 +137,16 @@ try:
             time.sleep(0.05)  # Debounce delay
         elif GPIO.input(RIGHT_BUTTON_PIN) == GPIO.HIGH:
             right_pressed = False
-        
+
+        # Check refresh button
+        if GPIO.input(REFRESH_BUTTON_PIN) == GPIO.LOW and not refresh_pressed:
+            device.emit_click(uinput.KEY_SPACE)
+            print("Spacebar key pressed (Refresh)")
+            refresh_pressed = True
+            time.sleep(0.05)  # Debounce delay
+        elif GPIO.input(REFRESH_BUTTON_PIN) == GPIO.HIGH:
+            refresh_pressed = False
+
         time.sleep(0.01)  # Polling delay
 
 except KeyboardInterrupt:
@@ -290,6 +310,7 @@ Edit the script and modify these lines:
 ```python
 LEFT_BUTTON_PIN = 17   # Change to your desired GPIO
 RIGHT_BUTTON_PIN = 22  # Change to your desired GPIO
+REFRESH_BUTTON_PIN = 27  # Change to your desired GPIO
 ```
 
 ### Change Keyboard Keys
