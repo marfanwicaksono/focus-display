@@ -27,7 +27,7 @@ body {
 
 .datetime-display {
     color: white;
-    text-align: center;
+    text-align: left;
     text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
     display: flex;
     align-items: center;
@@ -41,7 +41,7 @@ body {
 }
 
 .time {
-    font-size: 5rem;
+    font-size: 8rem;
     font-weight: 700;
     letter-spacing: 0.05em;
 }

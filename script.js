@@ -59,7 +59,7 @@ function updateDateTime() {
     // Format date string
     const dayDateElement = document.getElementById('dayDate');
     if (dayDateElement) {
-        dayDateElement.textContent = `${dayName}, ${month} ${day}, ${year} (${hijri.day} ${hijri.monthName} ${hijri.year} H)`;
+        dayDateElement.innerHTML = `${dayName}, ${month} ${day}, ${year}<br>${hijri.day} ${hijri.monthName} ${hijri.year} H`;
     }
 
     // Format time string (24-hour format)
