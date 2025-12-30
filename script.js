@@ -43,12 +43,12 @@ function updateDateTime() {
     const gmt7Time = new Date(now.getTime() + (gmt7Offset + localOffset) * 60000);
 
     // Get day name
-    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const dayName = dayNames[gmt7Time.getDay()];
 
     // Get date
-    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
-                       'July', 'August', 'September', 'October', 'November', 'December'];
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const month = monthNames[gmt7Time.getMonth()];
     const day = gmt7Time.getDate();
     const year = gmt7Time.getFullYear();
