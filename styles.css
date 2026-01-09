@@ -7,11 +7,16 @@
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background-size: contain;
+    background-position: center;
+    background-attachment: fixed;
+    background-repeat: no-repeat;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
     position: relative;
     transition: background 0.8s ease;
+    overflow-x: hidden;
 }
 
 .header {
@@ -48,27 +53,28 @@ body {
 
 .container {
     text-align: center;
-    padding: 3rem;
+    padding: 2rem;
     padding-top: 140px;
-    max-width: 95%;
+    padding-bottom: 2rem;
     width: 100%;
     flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
+    overflow-y: auto;
 }
 
 .card-display {
     color: white;
-    text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-    min-height: 90vh;
+    text-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    min-height: auto;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 3rem;
+    padding: 2rem;
     width: 100%;
-    max-width: 100%;
+    max-width: 90vw;
     margin: 0 auto;
 }
 

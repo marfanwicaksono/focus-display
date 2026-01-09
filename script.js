@@ -102,7 +102,7 @@ function getTrelloParams() {
 // Fetch detailed cards from Trello
 async function fetchTrelloCards(listId, apiKey, token) {
     try {
-        const url = `https://api.trello.com/1/lists/${listId}/cards?key=${apiKey}&token=${token}&fields=all&members=true&member_fields=all&checklists=all&attachments=true`;
+        const url = `https://api.trello.com/1/lists/${listId}/cards?key=${apiKey}&token=${token}&fields=all&members=true&member_fields=all&checklists=all&attachments=true&cover=true`;
         const response = await fetch(url);
 
         if (!response.ok) {
@@ -318,16 +318,45 @@ let cardDisplay = document.getElementById('cardDisplay');
 function displayCard() {
     if (cards.length === 0) {
         cardDisplay.innerHTML = '<div class="no-goals">No goals set.<br><br>Add ?goals=goal1|goal2|goal3<br>or<br>?listId=YOUR_LIST_ID&apiKey=YOUR_API_KEY&token=YOUR_TOKEN</div>';
+        document.body.style.backgroundImage = 'none';
         document.body.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
         return;
     }
 
     const card = cards[currentIndex];
 
-    // Update background based on labels
-    if (!card.isSimple && card.labels) {
+    // Update background: extract cover URL from description
+    let coverImageUrl = null;
+    let descriptionToDisplay = card.desc || '';
+    
+    if (!card.isSimple && card.desc) {
+        // Look for "Cover: " followed by either:
+        // - Plain URL: Cover: https://...
+        // - Markdown link: Cover: [https://...](https://...)
+        let coverMatch = card.desc.match(/Cover:\s*\[?(https?:\/\/[^\s\[\]\(\)]+)/i);
+        if (coverMatch && coverMatch[1]) {
+            coverImageUrl = coverMatch[1];
+            // Remove the entire Cover line from displayed description
+            descriptionToDisplay = card.desc.replace(/Cover:\s*(\[)?https?:\/\/[^\s\[\]\(\)]+(\]?)(\([^)]*\))?(\s*"[^"]*")?(\s*\))?/i, '').trim();
+        }
+        
+        // Also remove any standalone markdown links with https:// or http://
+        descriptionToDisplay = descriptionToDisplay.replace(/\[([^\]]*)\]\((https?:\/\/[^\)]+)\)/g, '').trim();
+        // Also remove any text containing just URLs in parentheses
+        descriptionToDisplay = descriptionToDisplay.replace(/\(\s*https?:\/\/[^\)]+\s*\)/g, '').trim();
+    }
+
+    if (coverImageUrl) {
+        document.body.style.backgroundImage = `url("${coverImageUrl}")`;
+        document.body.style.backgroundSize = 'contain';
+        document.body.style.backgroundPosition = 'center';
+        document.body.style.backgroundAttachment = 'fixed';
+        document.body.style.backgroundRepeat = 'no-repeat';
+    } else if (!card.isSimple && card.labels) {
+        document.body.style.backgroundImage = 'none';
         document.body.style.background = getBackgroundFromLabels(card.labels);
     } else {
+        document.body.style.backgroundImage = 'none';
         document.body.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
     }
 
@@ -404,8 +433,8 @@ function displayCard() {
     }
 
     // Description
-    if (card.desc) {
-        html += `<div class="card-description">${escapeHtml(card.desc)}</div>`;
+    if (descriptionToDisplay) {
+        html += `<div class="card-description">${escapeHtml(descriptionToDisplay)}</div>`;
     }
 
     // Checklists
