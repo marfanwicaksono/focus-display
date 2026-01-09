@@ -325,6 +325,14 @@ function displayCard() {
 
     const card = cards[currentIndex];
 
+    // Determine whether to hide the title based on the "No Title" label
+    const hasNoTitleLabel = Array.isArray(card.labels) && card.labels.some(label =>
+        typeof label.name === 'string' && label.name.trim().toLowerCase() === 'no title'
+    );
+    const visibleLabels = Array.isArray(card.labels)
+        ? card.labels.filter(label => !(typeof label.name === 'string' && label.name.trim().toLowerCase() === 'no title'))
+        : [];
+
     // Update background: extract cover URL from description
     let coverImageUrl = null;
     let descriptionToDisplay = card.desc || '';
@@ -352,9 +360,9 @@ function displayCard() {
         document.body.style.backgroundPosition = 'center';
         document.body.style.backgroundAttachment = 'fixed';
         document.body.style.backgroundRepeat = 'no-repeat';
-    } else if (!card.isSimple && card.labels) {
+    } else if (!card.isSimple && visibleLabels.length > 0) {
         document.body.style.backgroundImage = 'none';
-        document.body.style.background = getBackgroundFromLabels(card.labels);
+        document.body.style.background = getBackgroundFromLabels(visibleLabels);
     } else {
         document.body.style.backgroundImage = 'none';
         document.body.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
@@ -375,10 +383,12 @@ function displayCard() {
     let html = '<div class="card-content">';
 
     // Title
-    html += `<div class="card-title">${escapeHtml(card.name)}</div>`;
+    if (!hasNoTitleLabel) {
+        html += `<div class="card-title">${escapeHtml(card.name)}</div>`;
+    }
 
     // Info row (labels, due date, members)
-    const hasLabels = card.labels && card.labels.length > 0;
+    const hasLabels = visibleLabels.length > 0;
     const hasDueDate = card.due;
     const hasMembers = card.members && card.members.length > 0;
 
@@ -388,7 +398,7 @@ function displayCard() {
         // Labels
         if (hasLabels) {
             html += '<div class="card-labels">';
-            card.labels.forEach(label => {
+            visibleLabels.forEach(label => {
                 const bgColor = getTrelloColor(label.color);
                 const textColor = isLightColor(bgColor) ? '#333' : '#fff';
                 const labelName = label.name || label.color;
