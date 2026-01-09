@@ -341,23 +341,3 @@ body {
         font-size: 1rem;
     }
 }
-
-/* Photo display styles */
-.photo-display {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 100vh;
-}
-
-.photo-label {
-    background: rgba(0, 0, 0, 0.6);
-    color: white;
-    padding: 1.5rem 2.5rem;
-    border-radius: 10px;
-    font-size: 2rem;
-    font-weight: 600;
-    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
-    max-width: 90%;
-    word-wrap: break-word;
-}
