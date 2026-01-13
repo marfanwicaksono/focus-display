@@ -39,6 +39,123 @@ body {
     gap: 2rem;
 }
 
+.auto-refresh-status {
+    margin-left: 1rem;
+    padding: 0.45rem 0.9rem;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    font-size: 1.6rem;
+    font-weight: 600;
+    color: #fff;
+}
+
+.auto-refresh-status.on {
+    background: rgba(46, 204, 113, 0.12);
+    color: #b9f6c6;
+}
+
+.auto-refresh-status.off {
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+} 
+
+.auto-refresh-countdown {
+    display: none; /* replaced by full overlay */
+}
+
+/* Full screen overlay */
+.auto-refresh-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.5); /* ~50% opacity dim */
+}
+
+.auto-refresh-overlay-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    background: transparent;
+    padding: 1rem 1.5rem;
+    border-radius: 12px;
+    color: #fff;
+}
+
+.countdown-svg {
+    filter: drop-shadow(0 8px 30px rgba(0,0,0,0.6));
+}
+
+.countdown-bg {
+    stroke: rgba(255,255,255,0.08);
+}
+
+.countdown-progress {
+    stroke: #b9f6c6; /* greenish */
+    transform: rotate(-90deg);
+    transform-origin: 60px 60px;
+    stroke-dasharray: 326.7256; /* will be overridden by JS to match radius */
+    stroke-dashoffset: 326.7256;
+    transition: stroke-dashoffset 0.05s linear;
+}
+
+.overlay-text {
+    text-align: center;
+}
+
+.overlay-title {
+    font-size: 1.6rem;
+    font-weight: 700;
+}
+
+.overlay-time {
+    font-size: 2.4rem;
+    font-weight: 800;
+    margin-top: 0.25rem;
+}
+
+.overlay-sub {
+    font-size: 1.1rem;
+    opacity: 0.85;
+    margin-top: 0.25rem;
+}
+
+/* Auto-refresh status header tweaks */
+.auto-refresh-status {
+    margin-left: 1rem;
+    padding: 0.45rem 0.9rem;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #fff;
+}
+
+.auto-refresh-status .ars-label {
+    font-size: 1rem;
+    opacity: 0.85;
+}
+
+.auto-refresh-status .ars-state {
+    font-size: 1.1rem;
+    font-weight: 800;
+    margin-top: 0.15rem;
+}
+
+.auto-refresh-status.on {
+    background: rgba(46, 204, 113, 0.12);
+    color: #b9f6c6;
+}
+
+.auto-refresh-status.off {
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+}
+
+
 .day-date {
     font-size: 4rem;
     font-weight: 600;

@@ -11,12 +11,35 @@
         <div class="datetime-display" id="datetimeDisplay">
             <div class="day-date" id="dayDate">Loading...</div>
             <div class="time" id="time">Loading...</div>
+            <div class="auto-refresh-status" id="autoRefreshStatus">
+                <div class="ars-label">Auto-refresh</div>
+                <div class="ars-state" id="autoRefreshState">Off</div>
+            </div>
+            <div class="auto-refresh-countdown" id="autoRefreshCountdown" style="display:none;" aria-hidden="true">
+                <div class="countdown-bar"><div class="countdown-fill" id="countdownFill"></div></div>
+                <div class="countdown-text" id="countdownText">Hold: 2.0s</div>
+            </div>
         </div>
     </header>
     <div class="container">
         <div class="card-display" id="cardDisplay">
             <div class="card-content">
                 <div class="card-title">Loading...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Circular countdown overlay (hidden by default) -->
+    <div id="autoRefreshOverlay" class="auto-refresh-overlay" style="display:none;" aria-hidden="true">
+        <div class="auto-refresh-overlay-content" role="dialog" aria-live="assertive">
+            <svg class="countdown-svg" viewBox="0 0 120 120" width="160" height="160" aria-hidden="true">
+                <circle class="countdown-bg" cx="60" cy="60" r="52" fill="none" stroke-width="8" />
+                <circle class="countdown-progress" cx="60" cy="60" r="52" fill="none" stroke-width="8" stroke-linecap="round" />
+            </svg>
+            <div class="overlay-text">
+                <div class="overlay-title" id="overlayTitle">Toggling auto-refresh</div>
+                <div class="overlay-time" id="overlayTime">2.0s</div>
+                <div class="overlay-sub">Release to confirm</div>
             </div>
         </div>
     </div>

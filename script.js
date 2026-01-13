@@ -250,6 +250,12 @@ async function refreshTrelloCards() {
 function startAutoRefresh() {
     const trelloParams = getTrelloParams();
 
+    // Respect the AUTO_REFRESH toggle: if disabled, don't set intervals
+    if (!AUTO_REFRESH) {
+        console.log('Auto-refresh is disabled (manual refresh via Spacebar).');
+        return;
+    }
+
     // Only set up auto-refresh if we're using Trello
     if (trelloParams.listId && trelloParams.apiKey && trelloParams.token) {
         stopAutoRefresh();
@@ -258,7 +264,7 @@ function startAutoRefresh() {
             refreshTrelloCards();
         }, REFRESH_TIME);
 
-        console.log('Auto-refresh enabled: Trello cards will refresh every 5 minutes');
+        console.log(`Auto-refresh enabled: Trello cards will refresh every ${REFRESH_TIME / 60000} minutes`);
     }
 }
 
@@ -310,6 +316,99 @@ let rotationInterval = null;
 let refreshInterval = null;
 const ROTATION_TIME = 10000; // 10 seconds per card (increased for detailed content)
 const REFRESH_TIME = 300000; // 5 minutes in milliseconds
+// Toggle to enable/disable automatic Trello refresh (manual refresh via Spacebar)
+let AUTO_REFRESH = false; 
+
+// Long-press Spacebar to toggle AUTO_REFRESH
+const LONG_PRESS_DURATION = 2000; // milliseconds (2 seconds)
+let spacePressed = false;
+let longPressTriggered = false;
+let countdownInterval = null;
+let countdownStartTime = 0;
+
+function updateAutoRefreshStatus() {
+    const el = document.getElementById('autoRefreshStatus');
+    const stateEl = document.getElementById('autoRefreshState');
+    if (!el || !stateEl) return;
+    stateEl.textContent = AUTO_REFRESH ? 'On' : 'Off';
+    el.classList.toggle('on', AUTO_REFRESH);
+    el.classList.toggle('off', !AUTO_REFRESH);
+}
+
+function startSpaceCountdown() {
+    const overlay = document.getElementById('autoRefreshOverlay');
+    const progress = document.querySelector('.countdown-progress');
+    const overlayTime = document.getElementById('overlayTime');
+    const title = document.getElementById('overlayTitle');
+    if (!overlay || !progress || !overlayTime) return;
+
+    overlay.style.display = 'flex';
+    countdownStartTime = Date.now();
+
+    const radius = progress.r.baseVal.value;
+    const circumference = 2 * Math.PI * radius;
+    progress.style.strokeDasharray = `${circumference}`;
+    progress.style.strokeDashoffset = `${circumference}`;
+
+    if (countdownInterval) clearInterval(countdownInterval);
+    countdownInterval = setInterval(() => {
+        const elapsed = Date.now() - countdownStartTime;
+        const pct = Math.min(1, elapsed / LONG_PRESS_DURATION);
+        const offset = circumference * (1 - pct);
+        progress.style.strokeDashoffset = `${offset}`;
+        const remaining = Math.max(0, (LONG_PRESS_DURATION - elapsed) / 1000);
+        overlayTime.textContent = `${remaining.toFixed(1)}s`;
+
+        if (pct >= 1) {
+            clearInterval(countdownInterval);
+            countdownInterval = null;
+            // toggle
+            AUTO_REFRESH = !AUTO_REFRESH;
+            if (AUTO_REFRESH) {
+                startAutoRefresh();
+            } else {
+                stopAutoRefresh();
+            }
+            updateAutoRefreshStatus();
+            if (title) title.textContent = AUTO_REFRESH ? 'Auto-refresh: On' : 'Auto-refresh: Off';
+            longPressTriggered = true;
+            // brief pause so users see completed circle
+            setTimeout(hideCountdown, 700);
+        }
+    }, 30);
+}
+
+function hideCountdown() {
+    if (countdownInterval) {
+        clearInterval(countdownInterval);
+        countdownInterval = null;
+    }
+    const overlay = document.getElementById('autoRefreshOverlay');
+    const progress = document.querySelector('.countdown-progress');
+    const overlayTime = document.getElementById('overlayTime');
+    const title = document.getElementById('overlayTitle');
+    if (progress) {
+        const radius = progress.r.baseVal.value;
+        const circumference = 2 * Math.PI * radius;
+        progress.style.strokeDashoffset = `${circumference}`;
+    }
+    if (overlayTime) overlayTime.textContent = `${(LONG_PRESS_DURATION / 1000).toFixed(1)}s`;
+    if (title) title.textContent = 'Toggling auto-refresh';
+    if (overlay) overlay.style.display = 'none';
+    spacePressed = false;
+}
+
+function clearSpacePress() {
+    if (countdownInterval) {
+        clearInterval(countdownInterval);
+        countdownInterval = null;
+    }
+
+    hideCountdown();
+    spacePressed = false;
+    longPressTriggered = false;
+}
+
 
 // Elements
 let cardDisplay = document.getElementById('cardDisplay');
@@ -548,12 +647,18 @@ function previousCard() {
     displayCard();
 }
 
-// Keyboard navigation
+// Keyboard navigation (short press = manual refresh, hold 2s = toggle auto-refresh)
 document.addEventListener('keydown', (event) => {
-    // Spacebar for refresh
+    // Spacebar handling
     if (event.key === ' ' || event.code === 'Space') {
         event.preventDefault();
-        refreshTrelloCards();
+        // Ignore repeated keydown events while holding
+        if (spacePressed) return;
+        spacePressed = true;
+        longPressTriggered = false;
+
+        startSpaceCountdown();
+
         return;
     }
 
@@ -576,5 +681,27 @@ document.addEventListener('keydown', (event) => {
     }
 });
 
+// Spacebar release handler
+document.addEventListener('keyup', (event) => {
+    if (event.key === ' ' || event.code === 'Space') {
+        event.preventDefault();
+
+        // If longPressTriggered is false, treat as short press -> manual refresh
+        if (!longPressTriggered) {
+            refreshTrelloCards();
+        }
+
+        // clear countdown and reset flags
+        clearSpacePress();
+        return;
+    }
+});
+
+// Clear timers if the window loses focus
+window.addEventListener('blur', clearSpacePress);
+window.addEventListener('visibilitychange', () => { if (document.hidden) clearSpacePress(); });
+
 // Initialize
 initializeGoals();
+// Update status indicator initially
+updateAutoRefreshStatus();
