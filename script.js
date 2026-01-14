@@ -77,18 +77,6 @@ function updateDateTime() {
 setInterval(updateDateTime, 1000);
 updateDateTime(); // Initial call
 
-// Parse URL parameters
-function getGoalsFromURL() {
-    const params = new URLSearchParams(window.location.search);
-    const goalsParam = params.get('goals');
-
-    if (!goalsParam) {
-        return [];
-    }
-
-    return goalsParam.split('|').map(goal => goal.trim()).filter(goal => goal.length > 0);
-}
-
 // Get Trello parameters from URL
 function getTrelloParams() {
     const params = new URLSearchParams(window.location.search);
@@ -296,10 +284,6 @@ async function initializeGoals() {
 
         // Start auto-refresh for Trello cards
         startAutoRefresh();
-    } else {
-        // Fall back to URL goals parameter
-        const goals = getGoalsFromURL();
-        cards = goals.map(goal => ({ name: goal, isSimple: true }));
     }
 
     // Initialize display
@@ -416,7 +400,7 @@ let cardDisplay = document.getElementById('cardDisplay');
 // Display current card
 function displayCard() {
     if (cards.length === 0) {
-        cardDisplay.innerHTML = '<div class="no-goals">No goals set.<br><br>Add ?goals=goal1|goal2|goal3<br>or<br>?listId=YOUR_LIST_ID&apiKey=YOUR_API_KEY&token=YOUR_TOKEN</div>';
+        cardDisplay.innerHTML = '<div class="no-goals">No Trello cards found.<br><br>Add ?listId=YOUR_LIST_ID&apiKey=YOUR_API_KEY&token=YOUR_TOKEN</div>';
         document.body.style.backgroundImage = 'none';
         document.body.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
         return;
