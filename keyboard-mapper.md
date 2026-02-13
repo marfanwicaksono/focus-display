@@ -4,9 +4,13 @@ This guide shows you how to map physical buttons connected to Raspberry Pi GPIO 
 
 ## Overview
 
-- **GPIO 17** → Left Arrow Key
-- **GPIO 22** → Right Arrow Key
-- **GPIO 27** → Spacebar Key
+- **GPIO 17** → Left Arrow Key (click mode)
+- **GPIO 22** → Right Arrow Key (click mode)
+- **GPIO 27** → Spacebar Key (hold mode - supports continuous press for auto-refresh)
+
+**Mode Explanation:**
+- **Click mode**: Single press and release event (good for navigation)
+- **Hold mode**: Key stays pressed while button is held (good for toggles, continuous actions)
 
 ## Prerequisites
 
@@ -96,6 +100,20 @@ LEFT_BUTTON_PIN = 17   # GPIO 17 for left arrow
 RIGHT_BUTTON_PIN = 22  # GPIO 22 for right arrow
 REFRESH_BUTTON_PIN = 27  # GPIO 27 for spacebar (refresh)
 
+# Button mode configuration: 'click' or 'hold'
+BUTTON_MODES = {
+    LEFT_BUTTON_PIN: 'click',      # Press and release
+    RIGHT_BUTTON_PIN: 'click',     # Press and release
+    REFRESH_BUTTON_PIN: 'hold'     # Hold while button is pressed
+}
+
+# Key mapping for each button
+BUTTON_KEYS = {
+    LEFT_BUTTON_PIN: uinput.KEY_LEFT,
+    RIGHT_BUTTON_PIN: uinput.KEY_RIGHT,
+    REFRESH_BUTTON_PIN: uinput.KEY_SPACE
+}
+
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(LEFT_BUTTON_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 GPIO.setup(RIGHT_BUTTON_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
@@ -109,48 +127,50 @@ device = uinput.Device([
 ])
 
 print("Virtual keyboard created")
-print("GPIO 17 -> Left Arrow")
-print("GPIO 22 -> Right Arrow")
-print("GPIO 27 -> Spacebar (Refresh)")
+print("GPIO 17 -> Left Arrow (click mode)")
+print("GPIO 22 -> Right Arrow (click mode)")
+print("GPIO 27 -> Spacebar (hold mode - auto-refresh toggle)")
 print("Listening for button presses...")
 
 try:
-    left_pressed = False
-    right_pressed = False
-    refresh_pressed = False
+    button_state = {
+        LEFT_BUTTON_PIN: False,
+        RIGHT_BUTTON_PIN: False,
+        REFRESH_BUTTON_PIN: False
+    }
 
     while True:
-        # Check left button
-        if GPIO.input(LEFT_BUTTON_PIN) == GPIO.LOW and not left_pressed:
-            device.emit_click(uinput.KEY_LEFT)
-            print("Left arrow key pressed")
-            left_pressed = True
-            time.sleep(0.05)  # Debounce delay
-        elif GPIO.input(LEFT_BUTTON_PIN) == GPIO.HIGH:
-            left_pressed = False
+        for pin in [LEFT_BUTTON_PIN, RIGHT_BUTTON_PIN, REFRESH_BUTTON_PIN]:
+            button_pressed = GPIO.input(pin) == GPIO.LOW
+            key = BUTTON_KEYS[pin]
+            mode = BUTTON_MODES[pin]
 
-        # Check right button
-        if GPIO.input(RIGHT_BUTTON_PIN) == GPIO.LOW and not right_pressed:
-            device.emit_click(uinput.KEY_RIGHT)
-            print("Right arrow key pressed")
-            right_pressed = True
-            time.sleep(0.05)  # Debounce delay
-        elif GPIO.input(RIGHT_BUTTON_PIN) == GPIO.HIGH:
-            right_pressed = False
+            if button_pressed and not button_state[pin]:
+                # Button just pressed
+                if mode == 'click':
+                    device.emit_click(key)
+                    print(f"Button GPIO {pin}: Single click")
+                else:  # hold mode
+                    device.emit(key, 1)  # Press and hold
+                    print(f"Button GPIO {pin}: Key pressed (holding)")
+                button_state[pin] = True
+                time.sleep(0.05)  # Debounce delay
 
-        # Check refresh button
-        if GPIO.input(REFRESH_BUTTON_PIN) == GPIO.LOW and not refresh_pressed:
-            device.emit_click(uinput.KEY_SPACE)
-            print("Spacebar key pressed (Refresh)")
-            refresh_pressed = True
-            time.sleep(0.05)  # Debounce delay
-        elif GPIO.input(REFRESH_BUTTON_PIN) == GPIO.HIGH:
-            refresh_pressed = False
+            elif not button_pressed and button_state[pin]:
+                # Button just released
+                if mode == 'hold':
+                    device.emit(key, 0)  # Release key
+                    print(f"Button GPIO {pin}: Key released")
+                button_state[pin] = False
 
         time.sleep(0.01)  # Polling delay
 
 except KeyboardInterrupt:
     print("\nCleaning up...")
+    # Release any held keys
+    for pin in [LEFT_BUTTON_PIN, RIGHT_BUTTON_PIN, REFRESH_BUTTON_PIN]:
+        if button_state[pin] and BUTTON_MODES[pin] == 'hold':
+            device.emit(BUTTON_KEYS[pin], 0)
     GPIO.cleanup()
 ```
 
@@ -260,6 +280,35 @@ sudo journalctl -u button-keyboard.service -b
 
 ## Troubleshooting
 
+### Hold mode not working
+
+If keys aren't staying pressed when buttons are held:
+
+1. Verify button mode is set to 'hold':
+```python
+BUTTON_MODES = {
+    YOUR_PIN: 'hold'  # Must be exactly 'hold', not 'click'
+}
+```
+
+2. Check that the receiving application accepts held keys (some apps ignore continued key presses)
+
+3. Test with a text editor - hold a button and you should see repeated characters
+
+### Click mode not working
+
+If single clicks aren't being detected:
+
+1. Verify debounce delay isn't too long:
+```python
+time.sleep(0.05)  # Decrease this value if clicks are missed
+```
+
+2. Check button bouncing - try increasing debounce:
+```python
+time.sleep(0.1)  # Increase if you're getting double clicks
+```
+
 ### Service won't start
 ```bash
 # Check for errors
@@ -349,12 +398,47 @@ time.sleep(0.05)  # Debounce delay (increase if buttons are too sensitive)
 time.sleep(0.01)  # Polling delay (decrease for faster response)
 ```
 
+### Enable Hold Mode for Specific Buttons
+
+To enable hold mode for a button (e.g., spacebar for auto-refresh toggle), modify the `BUTTON_MODES` dictionary:
+
+```python
+BUTTON_MODES = {
+    LEFT_BUTTON_PIN: 'click',      # Single press and release
+    RIGHT_BUTTON_PIN: 'click',     # Single press and release
+    REFRESH_BUTTON_PIN: 'hold'     # Key stays pressed while button held
+}
+```
+
+**Click mode** uses `emit_click()` - sends instant press and release.
+
+**Hold mode** uses:
+- `emit(key, 1)` - Press and hold the key
+- `emit(key, 0)` - Release the key
+
+This allows the key to stay active for as long as the physical button is held, enabling:
+- Continuous scrolling with arrow keys
+- Auto-refresh toggle with spacebar
+- Holding modifier keys
+
+**Example: Hold mode for left arrow (continuous scroll left)**
+```python
+BUTTON_MODES = {
+    LEFT_BUTTON_PIN: 'hold',       # Hold to scroll continuously
+    RIGHT_BUTTON_PIN: 'click',
+    REFRESH_BUTTON_PIN: 'hold'
+}
+```
+
 ## Additional Notes
 
 - **Pull-up resistors**: The script uses internal pull-up resistors, so buttons should connect GPIO to GND
 - **Headless operation**: Works without X11/GUI, perfect for kiosk setups
 - **Multiple buttons**: You can easily add more buttons by following the same pattern
 - **Root requirement**: The service runs as root to access uinput without permission issues
+- **Hold mode**: Best for continuous actions (auto-refresh, continuous scrolling)
+- **Click mode**: Best for single events (navigation, entering)
+- **Key release cleanup**: The script automatically releases held keys on exit (KeyboardInterrupt)
 
 ## Complete Uninstall
 
